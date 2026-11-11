@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{.Host}}</title>
+<style>
+body { font-family: system-ui, sans-serif; margin: 3rem auto; max-width: 40rem; padding: 0 1rem; }
+li { margin: 0.5rem 0; }
+footer { margin-top: 3rem; font-size: 0.9rem; }
+</style>
+</head>
+<body>
+<h1>{{.Host}}</h1>
+<p>Go modules with an import path on this host:</p>
+<ul>
+{{- range .Modules}}
+<li><a href="https://pkg.go.dev/{{.ImportPath}}"><code>{{.ImportPath}}</code></a></li>
+{{- end}}
+</ul>
+<footer>by <a href="https://www.venceslau.dev">Bruno Venceslau</a></footer>
+</body>
+</html>

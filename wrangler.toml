@@ -1,0 +1,27 @@
+# Cloudflare Workers static-assets configuration.
+# The site is a fully static bundle (no Worker code): `wrangler deploy` uploads
+# the generated ./public directory and serves it directly.
+# https://developers.cloudflare.com/workers/static-assets/
+name = "pkg-venceslau-dev"
+compatibility_date = "2025-01-01"
+
+[assets]
+directory = "./public"
+# Serve static/404.html (with a 404 status) for unknown paths. Unmatched
+# subpaths still 404, which lets the go tool walk up to the package root.
+not_found_handling = "404-page"
+
+[observability]
+enabled = false
+head_sampling_rate = 1
+
+[observability.logs]
+enabled = true
+head_sampling_rate = 1
+persist = true
+invocation_logs = true
+
+[observability.traces]
+enabled = false
+persist = true
+head_sampling_rate = 1

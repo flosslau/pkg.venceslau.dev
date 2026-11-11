@@ -1,0 +1,5 @@
+# The generated site.
+/public/
+
+# The binary go build writes.
+/pkg.venceslau.dev

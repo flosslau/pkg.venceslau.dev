@@ -1,0 +1,13 @@
+{
+  "host": "pkg.venceslau.dev",
+  "modules": [
+    {
+      "path": "singleflight",
+      "repo": "https://github.com/brunovenceslau/singleflight"
+    },
+    {
+      "path": "ynab",
+      "repo": "https://github.com/brunovenceslau/ynab.go"
+    }
+  ]
+}
