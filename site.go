@@ -10,6 +10,7 @@ import (
 	"html/template"
 	"io/fs"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 )
@@ -81,8 +82,7 @@ func render(name, tmpl string, data any) error {
 func copyTree(src, dst string) error {
 	fsys := os.DirFS(src)
 	return fs.WalkDir(fsys, ".", func(name string, d fs.DirEntry, err error) error {
-		// The root comes first: d is nil when src cannot be read at all.
-		if name != "." && name != ".well-known" && strings.HasPrefix(d.Name(), ".") {
+		if hidden(name) {
 			if d.IsDir() {
 				return fs.SkipDir
 			}
@@ -103,6 +103,13 @@ func copyTree(src, dst string) error {
 		}
 		return writeFile(filepath.Join(dst, filepath.FromSlash(name)), data)
 	})
+}
+
+// hidden reports whether copyTree leaves out the entry at name, a path
+// relative to the static directory: its last element starts with a dot and
+// it is not .well-known at the top.
+func hidden(name string) bool {
+	return name != "." && name != ".well-known" && strings.HasPrefix(path.Base(name), ".")
 }
 
 // writeFile writes a page for a web server to read, creating its directory.
