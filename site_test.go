@@ -214,28 +214,6 @@ func TestGenerate_reportsAPageItCannotWrite(t *testing.T) {
 	}
 }
 
-func TestGenerate_refusesSymbolicLinks(t *testing.T) {
-	t.Parallel()
-
-	outside := filepath.Join(t.TempDir(), "outside.txt")
-	if err := os.WriteFile(outside, []byte("not for publishing"), 0o600); err != nil {
-		t.Fatal(err)
-	}
-	static := t.TempDir()
-	if err := os.Symlink(outside, filepath.Join(static, "link.txt")); err != nil {
-		t.Skipf("no symbolic links here: %v", err)
-	}
-	out := t.TempDir()
-
-	err := generate(testConfig(), static, out)
-	if err == nil || !strings.Contains(err.Error(), "link.txt is not a regular file") {
-		t.Errorf("generate error = %v, want it to refuse link.txt", err)
-	}
-	if _, err := os.Stat(filepath.Join(out, "link.txt")); err == nil {
-		t.Error("the target of the link was copied into the site")
-	}
-}
-
 // Files a desktop or an editor leaves behind (.DS_Store, ._name, .name.swp)
 // stay out of the site; .well-known at the top is a published path (RFC 8615).
 func TestGenerate_skipsHiddenNames(t *testing.T) {
@@ -289,10 +267,11 @@ func TestGenerate_copiesAFileNamedWellKnown(t *testing.T) {
 	}
 }
 
-// A hidden symbolic link, or one inside a hidden directory, is skipped
-// without being read; the name .well-known is exempt, so a link of that name
-// is refused like any other link.
-func TestGenerate_symbolicLinksAndHiddenNames(t *testing.T) {
+// A symbolic link in static/ is refused, since it could publish a file from
+// outside. A hidden one, or one inside a hidden directory, is skipped without
+// being read; the name .well-known is exempt, so a link of that name is
+// refused like any other link.
+func TestGenerate_symbolicLinks(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -300,6 +279,7 @@ func TestGenerate_symbolicLinksAndHiddenNames(t *testing.T) {
 		link    string // where the link sits in static/
 		wantErr string // empty when the link is skipped
 	}{
+		{name: "link", link: "link.txt", wantErr: "link.txt is not a regular file"},
 		{name: "hidden link", link: ".link"},
 		{name: "link in a hidden directory", link: ".git/link"},
 		{name: "link named .well-known", link: ".well-known", wantErr: ".well-known is not a regular file"},
