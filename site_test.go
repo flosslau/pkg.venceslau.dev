@@ -195,9 +195,10 @@ func TestGenerate_withoutStaticFiles(t *testing.T) {
 func TestGenerate_missingStaticDirectory(t *testing.T) {
 	t.Parallel()
 
-	err := generate(testConfig(), filepath.Join(t.TempDir(), "absent"), t.TempDir())
-	if err == nil || !strings.Contains(err.Error(), "copy static files") || !strings.Contains(err.Error(), "absent") {
-		t.Errorf("generate error = %v, want one about copying the static files that names the directory", err)
+	static := filepath.Join(t.TempDir(), "absent")
+	err := generate(testConfig(), static, t.TempDir())
+	if err == nil || !strings.Contains(err.Error(), "copy static files: in "+static+": ") {
+		t.Errorf("generate error = %v, want one about copying the static files in %s", err, static)
 	}
 }
 

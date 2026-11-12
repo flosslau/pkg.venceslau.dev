@@ -104,7 +104,7 @@ func copyTree(src, dst string) error {
 		return writeFile(filepath.Join(dst, filepath.FromSlash(name)), data)
 	})
 	if err != nil {
-		return fmt.Errorf("walk %s: %w", src, err)
+		return fmt.Errorf("in %s: %w", src, err)
 	}
 	return nil
 }

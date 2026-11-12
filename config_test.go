@@ -33,8 +33,8 @@ func TestLoadConfig(t *testing.T) {
 		t.Parallel()
 		name := filepath.Join(t.TempDir(), "missing.json")
 		_, err := loadConfig(name)
-		if err == nil || !strings.Contains(err.Error(), "missing.json") {
-			t.Errorf("loadConfig error = %v, want one that names missing.json", err)
+		if err == nil || !strings.Contains(err.Error(), "read config") || !strings.Contains(err.Error(), "missing.json") {
+			t.Errorf("loadConfig error = %v, want one about reading missing.json", err)
 		}
 	})
 }
