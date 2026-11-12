@@ -73,8 +73,7 @@ func runCommand(t *testing.T, dir string, args ...string) (int, string) {
 	if ctx.Err() != nil {
 		t.Fatalf("the command did not end in time: %v; stderr:\n%s", ctx.Err(), &stderr)
 	}
-	var exitErr *exec.ExitError
-	if errors.As(err, &exitErr) {
+	if exitErr, ok := errors.AsType[*exec.ExitError](err); ok {
 		return exitErr.ExitCode(), stderr.String()
 	}
 	if err != nil {
@@ -288,6 +287,10 @@ func TestGofmtGate(t *testing.T) {
 		{name: "the loop only under the integration tag", files: map[string]string{
 			"a.go":     "package probe\n",
 			"b_int.go": "//go:build integration\n\npackage probe\n\n" + fixable,
+		}},
+		{name: "the loop only in a file the integration tag leaves out", files: map[string]string{
+			"a.go":         "package probe\n",
+			"b_default.go": "//go:build !integration\n\npackage probe\n\n" + fixable,
 		}},
 		{name: "the loop only in a test file", files: map[string]string{
 			"a.go":      "package probe\n",

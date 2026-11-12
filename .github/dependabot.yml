@@ -1,0 +1,16 @@
+# Copyright 2026 Bruno Venceslau
+# SPDX-License-Identifier: Apache-2.0
+
+# Proposes updates of the actions the workflows pin by commit, a week after a
+# release, so a bad release has time to be pulled. Dependabot reads neither
+# mise.toml and mise.lock, which pin the tools CI installs, nor the version of
+# mise that ci.yml passes to mise-action: those are updated by hand.
+
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7

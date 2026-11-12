@@ -2,15 +2,17 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # Copyright and license of the files that carry no comment of their own:
-# go.mod and vanity.json are rewritten by tools, and the HTML files hold
-# nothing but the markup of the pages. Every other file states both in its
-# first lines.
+# go.mod, vanity.json, mise.lock and the locks under .mise/ are rewritten by
+# tools, and the HTML files hold nothing but the markup of the pages. Every
+# other file states both in its first lines.
 
 version = 1
 
 [[annotations]]
 path = [
+  ".mise/locks/**",
   "go.mod",
+  "mise.lock",
   "static/404.html",
   "templates/index.html",
   "templates/module.html",
