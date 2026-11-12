@@ -8,12 +8,39 @@ SPDX-License-Identifier: Apache-2.0
 The static site behind the Go import paths of `pkg.venceslau.dev`, and the
 small program that generates it.
 
-A module such as `pkg.venceslau.dev/ynab` does not live on this host. When the
+A module such as `pkg.venceslau.dev/ynab` does not live on this site. When the
 `go` command meets that import path, it asks
 `https://pkg.venceslau.dev/ynab?go-get=1` and reads a `go-import` meta tag in
 the answer, which names the repository that holds the code. This program
 writes one page with that tag for each module listed in `vanity.json`. The tag
 is specified in `go help importpath`, section "Remote import paths".
+
+## Glossary
+
+The words below mean one thing each, in this file and in the code. Where the
+code spells a term differently, the last column says how.
+
+| Term | Meaning | In the code |
+| --- | --- | --- |
+| host | The host name every import path starts with, such as `pkg.venceslau.dev`. | `Config.Host` |
+| module | One entry of `vanity.json`: an import path and the repository that holds its code. | `Module` |
+| path | What follows the host and its slash in an import path: `ynab` in `pkg.venceslau.dev/ynab`. | `Module.Path` |
+| path element | One part of a path between slashes. | `element`, `validatePath` |
+| import path | The host and the path joined by a slash. | `Module.ImportPath` |
+| repository root | The https URL of the repository that holds the module, as the `go` command clones it. | `Module.Repo`, field `repo` |
+| vcs | The version control system of the repository root: `git`, `hg`, `svn` or `fossil`. | `Module.VCS` |
+| version control qualifier | An ending `.git`, `.hg`, `.svn` or `.fossil` of a path element or of an element of a repository root, which the `go` command reads as the end of a repository root. | `vcsQualifier` |
+| subdir | The directory of the module inside its repository, when it is not the root. | `Module.Subdir` |
+| `go-import` tag | The meta tag in the head of a module page that names the import path, vcs, repository root and subdir. | `Module.GoImport`, `templates/module.html` |
+| configuration file | The file that lists the host and the modules, `vanity.json` by default. | `Config`, `loadConfig` |
+| site | The directory of files the web server serves, `public/` by default. | `generate` |
+| web server | Whatever serves the site over https; Cloudflare here. | `wrangler.toml` |
+| module page | `<path>/index.html`: the `go-import` tag and a redirect to pkg.go.dev. | `templates/module.html`, `modulePage` |
+| index page | `index.html`: the list of modules, with no `go-import` tag. | `templates/index.html` |
+| generated page | A module page or the index page. | `render` |
+| static directory | The directory whose files are copied into the site, `static/` by default. | `-static` |
+| static file | A file of the static directory, copied into the site as it is. | `copyTree` |
+| hidden entry | A file or directory of the static directory whose name starts with a dot, left out of the site; an entry named `.well-known` at the top is not one. | `hidden` |
 
 ## Configuration
 
@@ -32,8 +59,8 @@ is specified in `go help importpath`, section "Remote import paths".
 | Field | Required | Meaning |
 | --- | --- | --- |
 | `host` | yes | The host of the import paths, in lower case, with no scheme, port or path. |
-| `modules[].path` | yes | The import path below the host: `foo` gives `example.org/foo`. No element ends in a dot, in `.html` or in a version control qualifier such as `.git`. |
-| `modules[].repo` | yes | The https URL of the repository root: host and path only, with no version control qualifier such as `.git`, no trailing slash, query or fragment. |
+| `modules[].path` | yes | What follows the host in the import path: `foo` gives `example.org/foo`. No element ends in a dot, in `.html` or in a version control qualifier such as `.git`. |
+| `modules[].repo` | yes | The https URL of the repository root: a server name and a path only, with no port, no version control qualifier such as `.git`, no trailing slash, query or fragment. |
 | `modules[].vcs` | no | `git` (the default), `hg`, `svn` or `fossil`. |
 | `modules[].subdir` | no | The directory of the module inside the repository, when it is not the root. The `go` command reads it since Go 1.25, and the tags of such a module carry the directory as a prefix (`libs/bar/v1.2.3`). |
 
@@ -54,10 +81,10 @@ writes the site to `public/`:
   redirect to its documentation on pkg.go.dev;
 - every file of `static/`, as it is. A generated page replaces a static file
   of the same name, and a symbolic link in `static/` is an error. Hidden
-  files and directories, whose names start with a dot, are left out (such as
-  the `.DS_Store` files of macOS), except the name `.well-known` at the top
-  of `static/`. A hidden file that the host has to find in the site
-  directory would need its own exception in `copyTree`.
+  entries, files and directories whose names start with a dot, are left out
+  (such as the `.DS_Store` files of macOS), except the name `.well-known` at
+  the top of `static/`. A hidden file that the web server has to find in the
+  site would need its own exception in `copyTree`.
 
 The output directory is never emptied: files already there are overwritten or
 left alone.
@@ -73,9 +100,9 @@ The look of the pages is in `templates/` and `static/`. In
 any style or script: the `go` command reads the head only, with a restricted
 parser.
 
-## What the host must do
+## What the web server must do
 
-Any static host works if it:
+Any static web server works if it:
 
 - serves `<path>/index.html` for a request to `/<path>`, with or without a
   redirect to `/<path>/`;
