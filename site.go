@@ -81,7 +81,7 @@ func render(name, tmpl string, data any) error {
 // (RFC 8615); it is then copied, or refused, like any other entry.
 func copyTree(src, dst string) error {
 	fsys := os.DirFS(src)
-	return fs.WalkDir(fsys, ".", func(name string, d fs.DirEntry, err error) error {
+	err := fs.WalkDir(fsys, ".", func(name string, d fs.DirEntry, err error) error {
 		if hidden(name) {
 			if d.IsDir() {
 				return fs.SkipDir
@@ -99,10 +99,14 @@ func copyTree(src, dst string) error {
 		}
 		data, err := fs.ReadFile(fsys, name)
 		if err != nil {
-			return err
+			return fmt.Errorf("read %s: %w", name, err)
 		}
 		return writeFile(filepath.Join(dst, filepath.FromSlash(name)), data)
 	})
+	if err != nil {
+		return fmt.Errorf("walk %s: %w", src, err)
+	}
+	return nil
 }
 
 // hidden reports whether copyTree leaves out the entry at name, a path
