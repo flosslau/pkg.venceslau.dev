@@ -15,7 +15,7 @@ permissions:
   contents: read
 
 jobs:
-  check-and-publish:
+  check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -23,9 +23,3 @@ jobs:
           persist-credentials: false
       - uses: jdx/mise-action@b44d12e7d0d8ee7461bb893e1b1993500433185b # v5.2.7
       - run: make check
-      - name: "[site] generate static site"
-        run: go run .
-      - name: "[site] verify go-import meta tag is present"
-        run: |
-          test -f public/ynab/index.html
-          grep -q 'name="go-import" content="pkg.venceslau.dev/ynab git ' public/ynab/index.html
