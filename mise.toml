@@ -6,3 +6,8 @@ go = "1.27.4"
 # reuse reads file encodings through this extra where libmagic is absent.
 "pipx:reuse" = { version = "6.3.0", extras = "charset-normalizer" }
 golangci-lint = "2.15.0"
+
+[settings]
+# Install only what mise.lock records, so a missing or stale lock fails
+# instead of installing whatever is newest.
+locked = true
