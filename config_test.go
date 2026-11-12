@@ -191,7 +191,7 @@ func TestParseConfig_rejects(t *testing.T) {
 		{name: "repo ending in .svn", doc: repo("https://code.example/r/foo.svn"), wantErr: "qualifier .svn"},
 		{name: "repo ending in .fossil", doc: repo("https://code.example/r/foo.fossil"), wantErr: "qualifier .fossil"},
 
-		{name: "unknown vcs", doc: oneModule(`"path": "foo", "repo": "https://code.example/r/foo", "vcs": "cvs"`), wantErr: `vcs "cvs" is not one of`},
+		{name: "unknown vcs", doc: oneModule(`"path": "foo", "repo": "https://code.example/r/foo", "vcs": "cvs"`), wantErr: `vcs "cvs" is not one of fossil, git, hg, svn`},
 		{name: "absolute subdir", doc: oneModule(`"path": "foo", "repo": "https://code.example/r/foo", "subdir": "/libs"`), wantErr: `subdir "/libs" must be`},
 		{name: "subdir with dot-dot", doc: oneModule(`"path": "foo", "repo": "https://code.example/r/foo", "subdir": "../libs"`), wantErr: `subdir "../libs" must be`},
 		{name: "subdir with space", doc: oneModule(`"path": "foo", "repo": "https://code.example/r/foo", "subdir": "li bs"`), wantErr: `subdir "li bs" must be`},
