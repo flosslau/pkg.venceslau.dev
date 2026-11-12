@@ -59,6 +59,8 @@ var knownVCS = map[string]bool{"fossil": true, "git": true, "hg": true, "svn": t
 
 // loadConfig reads and validates the configuration file at name.
 func loadConfig(name string) (*Config, error) {
+	// The path is the -config flag of whoever runs the program, who may read
+	// any file they like; Clean only satisfies gosec G304.
 	data, err := os.ReadFile(filepath.Clean(name))
 	if err != nil {
 		return nil, fmt.Errorf("read config: %w", err)

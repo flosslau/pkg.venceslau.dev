@@ -17,6 +17,12 @@ linters:
     - wastedassign
     - whitespace
     - lll
+    # Every nolint names its linter and says why.
+    - nolintlint
+  settings:
+    nolintlint:
+      require-explanation: true
+      require-specific: true
   exclusions:
     rules:
       # Exclude some linters from running on tests files. goconst: the
