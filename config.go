@@ -54,8 +54,9 @@ var (
 	// A repository element may also start with "~", as user names do on
 	// some servers. The group "path" is what follows the server name and
 	// its slash.
-	repoPattern = regexp.MustCompile(`^https://` + label + `(\.` + label + `)+/(?P<path>~?` + element + `(/~?` + element + `)*)$`)
-	repoPath    = repoPattern.SubexpIndex("path")
+	repoPattern = regexp.MustCompile(`^https://` + label + `(\.` + label + `)+` +
+		`/(?P<path>~?` + element + `(/~?` + element + `)*)$`)
+	repoPath = repoPattern.SubexpIndex("path")
 )
 
 // knownVCS lists the systems "go help importpath" names for the go-import
