@@ -129,7 +129,7 @@ func validatePath(path string) error {
 	if !pathPattern.MatchString(path) {
 		return errors.New("path must be elements of letters, digits and . _ ~ - joined by single slashes")
 	}
-	for _, e := range strings.Split(path, "/") {
+	for e := range strings.SplitSeq(path, "/") {
 		switch {
 		case strings.HasSuffix(e, "."):
 			return fmt.Errorf("path element %q must not end in a dot", e)

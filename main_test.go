@@ -200,7 +200,7 @@ func TestDeployMatchesTheDefaults(t *testing.T) {
 	}
 	// Whole lines, so a commented-out setting does not count.
 	var settings []string
-	for _, line := range strings.Split(string(wrangler), "\n") {
+	for line := range strings.SplitSeq(string(wrangler), "\n") {
 		settings = append(settings, strings.TrimSpace(line))
 	}
 	for _, want := range []string{`directory = "./public"`, `not_found_handling = "404-page"`} {
@@ -224,7 +224,7 @@ func TestCIRunsEveryGate(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		for _, line := range strings.Split(string(data), "\n") {
+		for line := range strings.SplitSeq(string(data), "\n") {
 			if rest, ok := strings.CutPrefix(strings.TrimSpace(line), prefix); ok {
 				return strings.Fields(strings.NewReplacer("]", " ", ",", " ").Replace(rest))
 			}
