@@ -102,6 +102,8 @@ func TestParseConfig_accepts(t *testing.T) {
 		{name: "vcs fossil", doc: oneModule(`"path": "foo", "vcs": "fossil", ` + repo)},
 		{name: "repo with upper case and a .go element", doc: oneModule(`"path": "foo", "repo": "https://github.com/SomeOrg/ynab.go"`)},
 		{name: "repo below a user name with a tilde", doc: oneModule(`"path": "foo", "repo": "https://git.example.org/~user/foo"`)},
+		{name: "repo element after the first one with a tilde", doc: oneModule(`"path": "foo", "repo": "https://git.example.org/o/~foo"`)},
+		{name: "repo with a path of one element", doc: oneModule(`"path": "foo", "repo": "https://code.example/foo"`)},
 		{name: "repo host ending in the letters of a vcs", doc: oneModule(`"path": "foo", "repo": "https://code.hg/r/foo"`)},
 		{name: "subdir of two elements", doc: oneModule(`"path": "foo", "subdir": "libs/foo", ` + repo)},
 	}
@@ -121,7 +123,7 @@ func TestParseConfig_rejects(t *testing.T) {
 	const (
 		badHost = "must be a lowercase host name"
 		badPath = "path must be elements"
-		badRepo = "must be https://host/path"
+		badRepo = "must be https://server/path"
 	)
 	repo := func(url string) string {
 		return oneModule(`"path": "foo", "repo": "` + url + `"`)
@@ -191,7 +193,7 @@ func TestParseConfig_rejects(t *testing.T) {
 		{name: "repo ending in .svn", doc: repo("https://code.example/r/foo.svn"), wantErr: "qualifier .svn"},
 		{name: "repo ending in .fossil", doc: repo("https://code.example/r/foo.fossil"), wantErr: "qualifier .fossil"},
 
-		{name: "unknown vcs", doc: oneModule(`"path": "foo", "repo": "https://code.example/r/foo", "vcs": "cvs"`), wantErr: `vcs "cvs" is not one of`},
+		{name: "unknown vcs", doc: oneModule(`"path": "foo", "repo": "https://code.example/r/foo", "vcs": "cvs"`), wantErr: `vcs "cvs" is not one of fossil, git, hg, svn`},
 		{name: "absolute subdir", doc: oneModule(`"path": "foo", "repo": "https://code.example/r/foo", "subdir": "/libs"`), wantErr: `subdir "/libs" must be`},
 		{name: "subdir with dot-dot", doc: oneModule(`"path": "foo", "repo": "https://code.example/r/foo", "subdir": "../libs"`), wantErr: `subdir "../libs" must be`},
 		{name: "subdir with space", doc: oneModule(`"path": "foo", "repo": "https://code.example/r/foo", "subdir": "li bs"`), wantErr: `subdir "li bs" must be`},
