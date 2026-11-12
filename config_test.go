@@ -102,6 +102,8 @@ func TestParseConfig_accepts(t *testing.T) {
 		{name: "vcs fossil", doc: oneModule(`"path": "foo", "vcs": "fossil", ` + repo)},
 		{name: "repo with upper case and a .go element", doc: oneModule(`"path": "foo", "repo": "https://github.com/SomeOrg/ynab.go"`)},
 		{name: "repo below a user name with a tilde", doc: oneModule(`"path": "foo", "repo": "https://git.example.org/~user/foo"`)},
+		{name: "repo element after the first one with a tilde", doc: oneModule(`"path": "foo", "repo": "https://git.example.org/o/~foo"`)},
+		{name: "repo with a path of one element", doc: oneModule(`"path": "foo", "repo": "https://code.example/foo"`)},
 		{name: "repo host ending in the letters of a vcs", doc: oneModule(`"path": "foo", "repo": "https://code.hg/r/foo"`)},
 		{name: "subdir of two elements", doc: oneModule(`"path": "foo", "subdir": "libs/foo", ` + repo)},
 	}
