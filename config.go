@@ -9,9 +9,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 )
 
@@ -49,8 +51,9 @@ var (
 	hostPattern = regexp.MustCompile(`^` + label + `(\.` + label + `)+$`)
 	pathPattern = regexp.MustCompile(`^` + element + `(/` + element + `)*$`)
 	// A repository element may also start with "~", as user names do on
-	// some hosts.
-	repoPattern = regexp.MustCompile(`^https://` + label + `(\.` + label + `)+(/~?` + element + `)+$`)
+	// some hosts. The group "path" is the part after the server name.
+	repoPattern = regexp.MustCompile(`^https://` + label + `(\.` + label + `)+(?P<path>(/~?` + element + `)+)$`)
+	repoPath    = repoPattern.SubexpIndex("path")
 )
 
 // knownVCS lists the systems "go help importpath" names for the go-import
@@ -118,7 +121,7 @@ func (m *Module) validate() error {
 		return err
 	}
 	if !knownVCS[m.VCS] {
-		return fmt.Errorf("vcs %q is not one of fossil, git, hg, svn", m.VCS)
+		return fmt.Errorf("vcs %q is not one of %s", m.VCS, strings.Join(slices.Sorted(maps.Keys(knownVCS)), ", "))
 	}
 	if m.Subdir != "" && !pathPattern.MatchString(m.Subdir) {
 		return fmt.Errorf("subdir %q must be a relative path inside the repository", m.Subdir)
@@ -149,12 +152,13 @@ func validatePath(path string) error {
 
 // validateRepo checks the URL of the repository root.
 func validateRepo(repo string) error {
-	if !repoPattern.MatchString(repo) {
+	match := repoPattern.FindStringSubmatch(repo)
+	if match == nil {
 		return fmt.Errorf("repo %q must be https://host/path in letters, digits and . _ ~ - only, "+
 			"with no trailing slash, query or fragment", repo)
 	}
 	// The repository root carries no ".vcs" qualifier (go help importpath).
-	for _, e := range strings.Split(strings.TrimPrefix(repo, "https://"), "/")[1:] {
+	for _, e := range strings.Split(match[repoPath][1:], "/") {
 		if q := vcsQualifier(e); q != "" {
 			return fmt.Errorf("repo %q must not carry the version control qualifier .%s", repo, q)
 		}
@@ -163,10 +167,10 @@ func validateRepo(repo string) error {
 }
 
 // vcsQualifier returns the version control system whose ".vcs" qualifier
-// ends the path element, or "" when there is none.
-func vcsQualifier(element string) string {
+// ends the path element elem, or "" when there is none.
+func vcsQualifier(elem string) string {
 	for vcs := range knownVCS {
-		if strings.HasSuffix(element, "."+vcs) {
+		if strings.HasSuffix(elem, "."+vcs) {
 			return vcs
 		}
 	}
