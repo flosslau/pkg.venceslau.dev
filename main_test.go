@@ -308,8 +308,14 @@ func TestGofmtGate(t *testing.T) {
 			cmd.Dir = dir
 			cmd.Env = append(os.Environ(), "GOTOOLCHAIN=local", "GOWORK=off", "GOFLAGS=")
 			out, err := cmd.CombinedOutput()
-			if passed := err == nil; passed != tt.wantPass {
-				t.Errorf("make gofmt passed = %v, want %v; output:\n%s", passed, tt.wantPass, out)
+			// A failing case must fail in the gate, with its message, not
+			// because make or go could not run at all.
+			var exit *exec.ExitError
+			switch {
+			case tt.wantPass && err != nil:
+				t.Errorf("make gofmt failed: %v; output:\n%s", err, out)
+			case !tt.wantPass && (!errors.As(err, &exit) || !bytes.Contains(out, []byte(" needed"))):
+				t.Errorf("make gofmt = %v, want the gate to fail with its message; output:\n%s", err, out)
 			}
 		})
 	}
