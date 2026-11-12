@@ -200,7 +200,7 @@ func TestDeployMatchesTheDefaults(t *testing.T) {
 	}
 	// Whole lines, so a commented-out setting does not count.
 	var settings []string
-	for _, line := range strings.Split(string(wrangler), "\n") {
+	for line := range strings.SplitSeq(string(wrangler), "\n") {
 		settings = append(settings, strings.TrimSpace(line))
 	}
 	for _, want := range []string{`directory = "./public"`, `not_found_handling = "404-page"`} {
@@ -210,5 +210,58 @@ func TestDeployMatchesTheDefaults(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join("static", "404.html")); err != nil {
 		t.Errorf("the 404 page of the deploy: %v", err)
+	}
+}
+
+// CI runs one job per gate of the Makefile, named after the gate and
+// running that gate, and the ruleset of main requires those names: the two
+// lists must agree, and the lines that wire them must be there.
+func TestCIRunsEveryGate(t *testing.T) {
+	t.Parallel()
+
+	makefileName := "Makefile"
+	workflowName := filepath.Join(".github", "workflows", "ci.yml")
+	lines := func(file string) []string {
+		t.Helper()
+		data, err := os.ReadFile(file)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var trimmed []string
+		for line := range strings.SplitSeq(string(data), "\n") {
+			trimmed = append(trimmed, strings.TrimSpace(line))
+		}
+		return trimmed
+	}
+	fields := func(file, prefix string) []string {
+		t.Helper()
+		for _, line := range lines(file) {
+			if rest, ok := strings.CutPrefix(line, prefix); ok {
+				return strings.Fields(strings.NewReplacer("]", " ", ",", " ").Replace(rest))
+			}
+		}
+		t.Fatalf("%s has no line that starts with %q", file, prefix)
+		return nil
+	}
+	makefile := fields(makefileName, "GATES :=")
+	workflow := fields(workflowName, "gate: [")
+	if len(makefile) == 0 || !slices.Equal(makefile, workflow) {
+		t.Errorf("gates in the Makefile %q, in the CI matrix %q: want the same list", makefile, workflow)
+	}
+
+	targets := []string{".PHONY: check $(GATES)", "check: $(GATES)"}
+	for _, gate := range makefile {
+		targets = append(targets, gate+":")
+	}
+	for file, wants := range map[string][]string{
+		makefileName: targets,
+		workflowName: {"name: ${{ matrix.gate }}", "GATE: ${{ matrix.gate }}", `- run: make "$GATE"`},
+	} {
+		have := lines(file)
+		for _, want := range wants {
+			if !slices.Contains(have, want) {
+				t.Errorf("%s lacks the line %s", file, want)
+			}
+		}
 	}
 }

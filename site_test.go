@@ -195,9 +195,10 @@ func TestGenerate_withoutStaticFiles(t *testing.T) {
 func TestGenerate_missingStaticDirectory(t *testing.T) {
 	t.Parallel()
 
-	err := generate(testConfig(), filepath.Join(t.TempDir(), "absent"), t.TempDir())
-	if err == nil || !strings.Contains(err.Error(), "copy static files") {
-		t.Errorf("generate error = %v, want one about copying the static files", err)
+	static := filepath.Join(t.TempDir(), "absent")
+	err := generate(testConfig(), static, t.TempDir())
+	if err == nil || !strings.Contains(err.Error(), "copy static files: in "+static+": ") {
+		t.Errorf("generate error = %v, want one about copying the static files in %s", err, static)
 	}
 }
 
@@ -409,15 +410,14 @@ func TestGenerate_reportsAStaticFileItCannotRead(t *testing.T) {
 	}
 	// Root and Windows can still open the file, so the test skips there;
 	// CI runs on ubuntu-latest as a user that is not root, where it runs.
-	if f, err := os.Open(locked); err == nil {
-		f.Close()
+	if _, err := os.ReadFile(locked); err == nil {
 		t.Skip("file permissions are not enforced here, as for root")
 	}
 	out := t.TempDir()
 
 	err := generate(testConfig(), static, out)
-	if err == nil || !strings.Contains(err.Error(), "copy static files") || !strings.Contains(err.Error(), "locked.txt") {
-		t.Errorf("generate error = %v, want one about copying locked.txt", err)
+	if err == nil || !strings.Contains(err.Error(), "copy static files") || !strings.Contains(err.Error(), "read locked.txt") {
+		t.Errorf("generate error = %v, want one about reading locked.txt", err)
 	}
 	if _, err := os.Stat(filepath.Join(out, "locked.txt")); err == nil {
 		t.Error("locked.txt was written to the site")

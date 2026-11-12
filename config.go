@@ -4,11 +4,13 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 )
@@ -57,13 +59,14 @@ var knownVCS = map[string]bool{"fossil": true, "git": true, "hg": true, "svn": t
 
 // loadConfig reads and validates the configuration file at name.
 func loadConfig(name string) (*Config, error) {
-	f, err := os.Open(name)
+	// The path is the -config flag of whoever runs the program, who may read
+	// any file they like; Clean only satisfies gosec G304.
+	data, err := os.ReadFile(filepath.Clean(name))
 	if err != nil {
-		return nil, fmt.Errorf("open config: %w", err)
+		return nil, fmt.Errorf("read config: %w", err)
 	}
-	defer f.Close()
 
-	cfg, err := parseConfig(f)
+	cfg, err := parseConfig(bytes.NewReader(data))
 	if err != nil {
 		return nil, fmt.Errorf("config %s: %w", name, err)
 	}
@@ -128,7 +131,7 @@ func validatePath(path string) error {
 	if !pathPattern.MatchString(path) {
 		return errors.New("path must be elements of letters, digits and . _ ~ - joined by single slashes")
 	}
-	for _, e := range strings.Split(path, "/") {
+	for e := range strings.SplitSeq(path, "/") {
 		switch {
 		case strings.HasSuffix(e, "."):
 			return fmt.Errorf("path element %q must not end in a dot", e)
@@ -147,7 +150,8 @@ func validatePath(path string) error {
 // validateRepo checks the URL of the repository root.
 func validateRepo(repo string) error {
 	if !repoPattern.MatchString(repo) {
-		return fmt.Errorf("repo %q must be https://host/path in letters, digits and . _ ~ - only, with no trailing slash, query or fragment", repo)
+		return fmt.Errorf("repo %q must be https://host/path in letters, digits and . _ ~ - only, "+
+			"with no trailing slash, query or fragment", repo)
 	}
 	// The repository root carries no ".vcs" qualifier (go help importpath).
 	for _, e := range strings.Split(strings.TrimPrefix(repo, "https://"), "/")[1:] {

@@ -81,7 +81,7 @@ func render(name, tmpl string, data any) error {
 // (RFC 8615); it is then copied, or refused, like any other entry.
 func copyTree(src, dst string) error {
 	fsys := os.DirFS(src)
-	return fs.WalkDir(fsys, ".", func(name string, d fs.DirEntry, err error) error {
+	err := fs.WalkDir(fsys, ".", func(name string, d fs.DirEntry, err error) error {
 		if hidden(name) {
 			if d.IsDir() {
 				return fs.SkipDir
@@ -99,10 +99,14 @@ func copyTree(src, dst string) error {
 		}
 		data, err := fs.ReadFile(fsys, name)
 		if err != nil {
-			return err
+			return fmt.Errorf("read %s: %w", name, err)
 		}
 		return writeFile(filepath.Join(dst, filepath.FromSlash(name)), data)
 	})
+	if err != nil {
+		return fmt.Errorf("in %s: %w", src, err)
+	}
+	return nil
 }
 
 // hidden reports whether copyTree leaves out the entry at name, a path
@@ -115,10 +119,12 @@ func hidden(name string) bool {
 
 // writeFile writes a page for a web server to read, creating its directory.
 func writeFile(name string, data []byte) error {
-	if err := os.MkdirAll(filepath.Dir(name), 0o755); err != nil {
+	// The site is public and a web server that may run as another user reads
+	// it, so directories and pages are readable by all.
+	if err := os.MkdirAll(filepath.Dir(name), 0o755); err != nil { //nolint:gosec // G301: public site
 		return fmt.Errorf("create directory: %w", err)
 	}
-	if err := os.WriteFile(name, data, 0o644); err != nil {
+	if err := os.WriteFile(name, data, 0o644); err != nil { //nolint:gosec // G306: public page
 		return fmt.Errorf("write page: %w", err)
 	}
 	return nil
