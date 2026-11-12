@@ -53,7 +53,11 @@ writes the site to `public/`:
 - `<path>/index.html` for each module, with its `go-import` tag and a
   redirect to its documentation on pkg.go.dev;
 - every file of `static/`, as it is. A generated page replaces a static file
-  of the same name, and a symbolic link in `static/` is an error.
+  of the same name, and a symbolic link in `static/` is an error. Hidden
+  files and directories, whose names start with a dot, are left out (such as
+  the `.DS_Store` files of macOS), except the name `.well-known` at the top
+  of `static/`. A hidden file that the host has to find in the site
+  directory would need its own exception in `copyTree`.
 
 The output directory is never emptied: files already there are overwritten or
 left alone.

@@ -236,6 +236,106 @@ func TestGenerate_refusesSymbolicLinks(t *testing.T) {
 	}
 }
 
+// Files a desktop or an editor leaves behind (.DS_Store, ._name, .name.swp)
+// stay out of the site; .well-known at the top is a published path (RFC 8615).
+func TestGenerate_skipsHiddenNames(t *testing.T) {
+	t.Parallel()
+
+	const securityTxt = "Contact: mailto:security@example.org\n"
+	static := t.TempDir()
+	writeFixtures(t, static, map[string]string{
+		"img/logo.svg":             "<svg/>",
+		".well-known/security.txt": securityTxt,
+		".DS_Store":                "finder",
+		"img/._logo.svg":           "appledouble",
+		"img/.logo.svg.swp":        "editor swap",
+		".well-known/.DS_Store":    "finder",
+		".cache/page.html":         "editor state",
+		"img/.well-known/x.txt":    "not at the top",
+	})
+	out := t.TempDir()
+
+	if err := generate(testConfig(), static, out); err != nil {
+		t.Fatalf("generate: %v", err)
+	}
+
+	if got := string(readPage(t, out, ".well-known", "security.txt")); got != securityTxt {
+		t.Errorf(".well-known/security.txt = %q, want the static file", got)
+	}
+	if got := string(readPage(t, out, "img", "logo.svg")); got != "<svg/>" {
+		t.Errorf("img/logo.svg = %q, want the static file", got)
+	}
+	for _, name := range []string{".DS_Store", "img/._logo.svg", "img/.logo.svg.swp", ".well-known/.DS_Store", ".cache", "img/.well-known"} {
+		if _, err := os.Lstat(filepath.Join(out, filepath.FromSlash(name))); err == nil {
+			t.Errorf("%s was copied into the site", name)
+		}
+	}
+}
+
+// The exception is the name .well-known at the top, whatever it is: a regular
+// file of that name is copied like any other.
+func TestGenerate_copiesAFileNamedWellKnown(t *testing.T) {
+	t.Parallel()
+
+	static := t.TempDir()
+	writeFixtures(t, static, map[string]string{".well-known": "a file"})
+	out := t.TempDir()
+
+	if err := generate(testConfig(), static, out); err != nil {
+		t.Fatalf("generate: %v", err)
+	}
+	if got := string(readPage(t, out, ".well-known")); got != "a file" {
+		t.Errorf(".well-known = %q, want the static file", got)
+	}
+}
+
+// A hidden symbolic link, or one inside a hidden directory, is skipped
+// without being read; the name .well-known is exempt, so a link of that name
+// is refused like any other link.
+func TestGenerate_symbolicLinksAndHiddenNames(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		link    string // where the link sits in static/
+		wantErr string // empty when the link is skipped
+	}{
+		{name: "hidden link", link: ".link"},
+		{name: "link in a hidden directory", link: ".git/link"},
+		{name: "link named .well-known", link: ".well-known", wantErr: ".well-known is not a regular file"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			outside := filepath.Join(t.TempDir(), "outside.txt")
+			if err := os.WriteFile(outside, []byte("not for publishing"), 0o600); err != nil {
+				t.Fatal(err)
+			}
+			static := t.TempDir()
+			link := filepath.Join(static, filepath.FromSlash(tt.link))
+			if err := os.MkdirAll(filepath.Dir(link), 0o755); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.Symlink(outside, link); err != nil {
+				t.Skipf("no symbolic links here: %v", err)
+			}
+			out := t.TempDir()
+
+			err := generate(testConfig(), static, out)
+			if tt.wantErr == "" && err != nil {
+				t.Errorf("generate: %v, want %s skipped", err, tt.link)
+			}
+			if tt.wantErr != "" && (err == nil || !strings.Contains(err.Error(), tt.wantErr)) {
+				t.Errorf("generate error = %v, want one containing %q", err, tt.wantErr)
+			}
+			if _, err := os.Lstat(filepath.Join(out, filepath.FromSlash(tt.link))); err == nil {
+				t.Errorf("%s was copied into the site", tt.link)
+			}
+		})
+	}
+}
+
 func TestGenerate_escapesWhatItPrints(t *testing.T) {
 	t.Parallel()
 
