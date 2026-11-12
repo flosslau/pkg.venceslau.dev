@@ -5,6 +5,9 @@
 go = "1.27.4"
 # reuse reads file encodings through this extra where libmagic is absent.
 "pipx:reuse" = { version = "6.3.0", extras = "charset-normalizer" }
+# mise installs reuse with uv from the lock under .mise/locks/, which needs
+# uv 0.12.10 or newer; pinned here so CI does not depend on the runner's uv.
+uv = "0.13.6"
 golangci-lint = "2.15.0"
 
 [settings]
