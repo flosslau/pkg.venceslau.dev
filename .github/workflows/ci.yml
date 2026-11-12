@@ -1,3 +1,6 @@
+# Copyright 2026 Bruno Venceslau
+# SPDX-License-Identifier: Apache-2.0
+
 name: CI
 
 # Checks only. Cloudflare's Git integration builds and deploys the site, so

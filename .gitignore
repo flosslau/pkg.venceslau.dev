@@ -1,3 +1,6 @@
+# Copyright 2026 Bruno Venceslau
+# SPDX-License-Identifier: Apache-2.0
+
 # The generated site.
 /public/
 
@@ -6,3 +9,6 @@
 
 # Local Claude Code state; the repository tracks none of it.
 /.claude/
+
+# Finder metadata on macOS, which `reuse lint` would report as unlabelled.
+.DS_Store

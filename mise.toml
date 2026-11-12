@@ -1,2 +1,7 @@
+# Copyright 2026 Bruno Venceslau
+# SPDX-License-Identifier: Apache-2.0
+
 [tools]
 go = "1.26"
+# reuse reads file encodings through this extra where libmagic is absent.
+"pipx:reuse" = { version = "6.3.0", extras = "charset-normalizer" }

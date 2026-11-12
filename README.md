@@ -1,3 +1,8 @@
+<!--
+Copyright 2026 Bruno Venceslau
+SPDX-License-Identifier: Apache-2.0
+-->
+
 # pkg.venceslau.dev
 
 The static site behind the Go import paths of `pkg.venceslau.dev`, and the
