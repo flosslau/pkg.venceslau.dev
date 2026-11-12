@@ -147,7 +147,8 @@ func validatePath(path string) error {
 // validateRepo checks the URL of the repository root.
 func validateRepo(repo string) error {
 	if !repoPattern.MatchString(repo) {
-		return fmt.Errorf("repo %q must be https://host/path in letters, digits and . _ ~ - only, with no trailing slash, query or fragment", repo)
+		return fmt.Errorf("repo %q must be https://host/path in letters, digits and . _ ~ - only, "+
+			"with no trailing slash, query or fragment", repo)
 	}
 	// The repository root carries no ".vcs" qualifier (go help importpath).
 	for _, e := range strings.Split(strings.TrimPrefix(repo, "https://"), "/")[1:] {
