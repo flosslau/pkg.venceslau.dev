@@ -18,9 +18,11 @@ tool and [golangci-lint](https://golangci-lint.run). `mise.toml` pins the
 versions of Go, reuse and golangci-lint that CI uses, for those who use
 [mise](https://mise.jdx.dev), and `mise.lock` (with the locks under
 `.mise/locks/`) records the checksum of each download; `mise install --locked`
-installs exactly those. After changing a version in `mise.toml`, run
-`mise lock --platform linux-x64,linux-arm64,macos-arm64` and commit what it
-writes.
+installs exactly those, and mise refuses to install anything the lock does not
+record. The lock covers Linux on x64 and arm64 and macOS on arm64; on another
+platform, add it to the command below. After changing a version in
+`mise.toml`, run `mise lock --platform linux-x64,linux-arm64,macos-arm64` and
+commit what it writes.
 Without mise, `pipx install 'reuse[charset-normalizer]'` installs reuse, and
 golangci-lint's documentation lists its installers.
 
