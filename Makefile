@@ -12,12 +12,12 @@ check: $(GATES)
 
 # gofmt reads every .go file, whatever its build tags, and its stderr is kept,
 # so a file that does not parse fails the gate even when nothing builds it.
-# The gate also runs go fix -diff, with and without the integration tag. Go
-# 1.26 prints the patch but exits 0, so the gate fails on any output; stderr is
-# kept, so that a build error fails it too, and so does a "go: downloading"
-# line when the toolchain changes. go fix does not see files for other
-# platforms or tags. The Go of mise.toml, which CI uses, is the reference:
-# other versions know other fixes. TestGofmtGate pins this recipe.
+# The gate also runs go fix -diff, with and without the integration tag. Some
+# Go releases (1.26) print the patch but exit 0, so the gate fails on any
+# output; stderr is kept, so that a build error fails it too, and so does a
+# "go: downloading" line when the toolchain changes. go fix does not see files
+# for other platforms or tags. The Go of mise.toml, which CI uses, is the
+# reference: other versions know other fixes. TestGofmtGate pins this recipe.
 gofmt:
 	@fmt="$$(gofmt -l . 2>&1)"; \
 		test -z "$$fmt" || { echo "gofmt needed on:"; printf '%s\n' "$$fmt"; exit 1; }

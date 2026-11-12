@@ -13,7 +13,7 @@ change, get in touch with @brunovenceslau first.
 
 ## Working on it
 
-You need Go 1.25 or newer, git, make, the [reuse](https://reuse.software)
+You need Go 1.27 or newer, git, make, the [reuse](https://reuse.software)
 tool and [golangci-lint](https://golangci-lint.run). `mise.toml` pins the
 versions of Go, reuse and golangci-lint that CI uses, for those who use
 [mise](https://mise.jdx.dev).

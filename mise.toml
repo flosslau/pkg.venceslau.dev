@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 [tools]
-go = "1.26"
+go = "1.27.4"
 # reuse reads file encodings through this extra where libmagic is absent.
 "pipx:reuse" = { version = "6.3.0", extras = "charset-normalizer" }
 golangci-lint = "2.15.0"

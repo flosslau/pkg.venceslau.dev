@@ -73,8 +73,7 @@ func runCommand(t *testing.T, dir string, args ...string) (int, string) {
 	if ctx.Err() != nil {
 		t.Fatalf("the command did not end in time: %v; stderr:\n%s", ctx.Err(), &stderr)
 	}
-	var exitErr *exec.ExitError
-	if errors.As(err, &exitErr) {
+	if exitErr, ok := errors.AsType[*exec.ExitError](err); ok {
 		return exitErr.ExitCode(), stderr.String()
 	}
 	if err != nil {
