@@ -10,7 +10,9 @@ import (
 	"html/template"
 	"io/fs"
 	"os"
+	"path"
 	"path/filepath"
+	"strings"
 )
 
 // The look of the site lives in these two files; the go-import tag in
@@ -72,10 +74,20 @@ func render(name, tmpl string, data any) error {
 // copyTree copies every file under src to the same relative path under dst.
 // os.CopyFS is not used because it refuses to overwrite, and generating
 // twice into the same directory has to work. Only regular files are copied:
-// a symbolic link could publish a file from outside src.
+// a symbolic link could publish a file from outside src. A hidden file or
+// directory, whose name starts with a dot, is skipped, so what a desktop or
+// an editor leaves behind (.DS_Store, ._name) is not published. The name
+// .well-known at the top of src is the exception, as a path the web defines
+// (RFC 8615); it is then copied, or refused, like any other entry.
 func copyTree(src, dst string) error {
 	fsys := os.DirFS(src)
 	return fs.WalkDir(fsys, ".", func(name string, d fs.DirEntry, err error) error {
+		if hidden(name) {
+			if d.IsDir() {
+				return fs.SkipDir
+			}
+			return nil
+		}
 		if err != nil {
 			return err
 		}
@@ -91,6 +103,14 @@ func copyTree(src, dst string) error {
 		}
 		return writeFile(filepath.Join(dst, filepath.FromSlash(name)), data)
 	})
+}
+
+// hidden reports whether copyTree leaves out the entry at name, a path
+// relative to the static directory: its last element starts with a dot and
+// it is not .well-known at the top. It is never true for the root ".", for
+// which the walk passes a nil entry when src cannot be read.
+func hidden(name string) bool {
+	return name != "." && name != ".well-known" && strings.HasPrefix(path.Base(name), ".")
 }
 
 // writeFile writes a page for a web server to read, creating its directory.
