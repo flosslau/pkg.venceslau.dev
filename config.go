@@ -161,7 +161,7 @@ func validateRepo(repo string) error {
 			"with no trailing slash, query or fragment", repo)
 	}
 	// The repository root carries no ".vcs" qualifier (go help importpath).
-	for _, e := range strings.Split(match[repoPath], "/") {
+	for e := range strings.SplitSeq(match[repoPath], "/") {
 		if q := vcsQualifier(e); q != "" {
 			return fmt.Errorf("repo %q must not carry the version control qualifier .%s", repo, q)
 		}
