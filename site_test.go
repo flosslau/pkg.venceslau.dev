@@ -280,6 +280,22 @@ func TestGenerate_thisSite(t *testing.T) {
 			t.Errorf("go-import tags of %s = %q, want only %q", m.Path, got, want)
 		}
 	}
+	// The import paths the site has published, which importers depend on: a
+	// change of host or a module dropped from vanity.json must fail here. A
+	// new module needs no change here, nor does a module that moves to
+	// another repository.
+	const host = "pkg.venceslau.dev"
+	for _, path := range []string{"singleflight", "ynab"} {
+		page, err := os.ReadFile(filepath.Join(out, path, "index.html"))
+		if err != nil {
+			t.Errorf("%s/%s is published, but the site has no page for it: %v", host, path, err)
+			continue
+		}
+		prefix := host + "/" + path + " git "
+		if got := goImports(t, page); len(got) != 1 || !strings.HasPrefix(got[0], prefix) {
+			t.Errorf("go-import tags of %s = %q, want one that starts with %q", path, got, prefix)
+		}
+	}
 	// The host answers an unknown address with this page, and the go
 	// command asks for addresses below a module: it must find no tag there.
 	if got := goImports(t, readPage(t, out, "404.html")); len(got) != 0 {

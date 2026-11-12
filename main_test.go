@@ -5,14 +5,83 @@ package main
 
 import (
 	"bytes"
+	"context"
+	"errors"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
+	"time"
 )
 
 const validConfig = `{"host": "example.org", "modules": [{"path": "foo", "repo": "https://code.example/r/foo"}]}`
+
+// runMainEnv, set to 1, makes the test binary run the command instead of the
+// tests, so that a test can run the command as a process: see TestCommand.
+const runMainEnv = "PKG_VENCESLAU_DEV_RUN_MAIN"
+
+func TestMain(m *testing.M) {
+	if os.Getenv(runMainEnv) == "1" {
+		main()
+		// A main that returns ends the built command with status 0. Running
+		// the tests here instead would start this process again.
+		os.Exit(0)
+	}
+	os.Exit(m.Run())
+}
+
+// The command as CI and the deploy run it: a process with no flags, in the
+// directory of the site. main must pass its arguments to run and exit with
+// the status run returns.
+func TestCommand(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	writeFixtures(t, dir, map[string]string{"vanity.json": validConfig, "static/x.txt": "x"})
+
+	if status, stderr := runCommand(t, dir); status != 0 {
+		t.Fatalf("the command exited with %d, want 0; stderr:\n%s", status, stderr)
+	}
+	if _, err := os.Stat(filepath.Join(dir, "public", "foo", "index.html")); err != nil {
+		t.Errorf("the command did not write the site: %v", err)
+	}
+	// A panic exits with 2 as well: the usage message tells them apart.
+	if status, stderr := runCommand(t, dir, "-nope"); status != 2 || !strings.Contains(stderr, "-nope") {
+		t.Errorf("the command with an unknown flag exited with %d, want 2 and a message on -nope; stderr:\n%s", status, stderr)
+	}
+}
+
+// runCommand runs the command in dir, as a process of this test binary, and
+// returns its exit status and what it wrote to stderr.
+func runCommand(t *testing.T, dir string, args ...string) (int, string) {
+	t.Helper()
+
+	exe, err := os.Executable()
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithTimeout(t.Context(), 2*time.Minute)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, exe, args...)
+	cmd.Dir = dir
+	cmd.Env = append(os.Environ(), runMainEnv+"=1")
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	err = cmd.Run()
+	if ctx.Err() != nil {
+		t.Fatalf("the command did not end in time: %v; stderr:\n%s", ctx.Err(), &stderr)
+	}
+	var exitErr *exec.ExitError
+	if errors.As(err, &exitErr) {
+		return exitErr.ExitCode(), stderr.String()
+	}
+	if err != nil {
+		t.Fatalf("run the command: %v", err)
+	}
+	return 0, stderr.String()
+}
 
 func TestRun(t *testing.T) {
 	t.Parallel()
