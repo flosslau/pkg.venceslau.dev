@@ -156,7 +156,7 @@ func validatePath(path string) error {
 func validateRepo(repo string) error {
 	match := repoPattern.FindStringSubmatch(repo)
 	if match == nil {
-		return fmt.Errorf("repo %q must be https://host/path in letters, digits and . _ ~ - only, "+
+		return fmt.Errorf("repo %q must be https://server/path in letters, digits and . _ ~ - only, "+
 			"with no trailing slash, query or fragment", repo)
 	}
 	// The repository root carries no ".vcs" qualifier (go help importpath).

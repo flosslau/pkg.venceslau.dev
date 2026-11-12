@@ -8,7 +8,7 @@ SPDX-License-Identifier: Apache-2.0
 The static site behind the Go import paths of `pkg.venceslau.dev`, and the
 small program that generates it.
 
-A module such as `pkg.venceslau.dev/ynab` does not live on this site. When the
+A module such as `pkg.venceslau.dev/ynab` does not live on this host. When the
 `go` command meets that import path, it asks
 `https://pkg.venceslau.dev/ynab?go-get=1` and reads a `go-import` meta tag in
 the answer, which names the repository that holds the code. This program
@@ -28,6 +28,7 @@ code spells a term differently, the last column says how.
 | path element | One part of a path between slashes. | `element`, `validatePath` |
 | import path | The host and the path joined by a slash. | `Module.ImportPath` |
 | repository root | The https URL of the repository that holds the module, as the `go` command clones it. | `Module.Repo`, field `repo` |
+| server name | The name of the server in a repository root: `github.com` in `https://github.com/o/r`. | `repoPattern` |
 | vcs | The version control system of the repository root: `git`, `hg`, `svn` or `fossil`. | `Module.VCS` |
 | version control qualifier | An ending `.git`, `.hg`, `.svn` or `.fossil` of a path element or of an element of a repository root, which the `go` command reads as the end of a repository root. | `vcsQualifier` |
 | subdir | The directory of the module inside its repository, when it is not the root. | `Module.Subdir` |

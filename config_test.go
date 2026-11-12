@@ -121,7 +121,7 @@ func TestParseConfig_rejects(t *testing.T) {
 	const (
 		badHost = "must be a lowercase host name"
 		badPath = "path must be elements"
-		badRepo = "must be https://host/path"
+		badRepo = "must be https://server/path"
 	)
 	repo := func(url string) string {
 		return oneModule(`"path": "foo", "repo": "` + url + `"`)
