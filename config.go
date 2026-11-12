@@ -27,11 +27,13 @@ type Config struct {
 // Module maps one import path under the host to the repository that holds
 // its code.
 type Module struct {
-	// Path is the import path below the host, with no slash at either end.
+	// Path is what follows the host in the import path, with no slash at
+	// either end.
 	Path string `json:"path"`
 	// Repo is the URL of the repository root.
 	Repo string `json:"repo"`
-	// VCS is the version control system of Repo. Empty means git.
+	// VCS is the version control system of Repo. parseConfig sets it to
+	// git when the file leaves it out; after that it is never empty.
 	VCS string `json:"vcs,omitempty"`
 	// Subdir is the directory of the module inside Repo, for a module that
 	// is not at the repository root. The go command reads it since Go 1.25.
@@ -129,7 +131,7 @@ func (m *Module) validate() error {
 	return validateRepo(m.Repo)
 }
 
-// validatePath checks the import path below the host.
+// validatePath checks the path of a module.
 func validatePath(path string) error {
 	if !pathPattern.MatchString(path) {
 		return errors.New("path must be elements of letters, digits and . _ ~ - joined by single slashes")
