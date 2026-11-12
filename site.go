@@ -107,7 +107,8 @@ func copyTree(src, dst string) error {
 
 // hidden reports whether copyTree leaves out the entry at name, a path
 // relative to the static directory: its last element starts with a dot and
-// it is not .well-known at the top.
+// it is not .well-known at the top. It is never true for the root ".", for
+// which the walk passes a nil entry when src cannot be read.
 func hidden(name string) bool {
 	return name != "." && name != ".well-known" && strings.HasPrefix(path.Base(name), ".")
 }
