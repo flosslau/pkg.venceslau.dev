@@ -213,28 +213,51 @@ func TestDeployMatchesTheDefaults(t *testing.T) {
 	}
 }
 
-// CI runs one job per gate of the Makefile, named after the gate, and the
-// ruleset of main requires those names, so the two lists must agree.
+// CI runs one job per gate of the Makefile, named after the gate and
+// running that gate, and the ruleset of main requires those names: the two
+// lists must agree, and the lines that wire them must be there.
 func TestCIRunsEveryGate(t *testing.T) {
 	t.Parallel()
 
-	fields := func(file, prefix string) []string {
+	makefileName := "Makefile"
+	workflowName := filepath.Join(".github", "workflows", "ci.yml")
+	lines := func(file string) []string {
 		t.Helper()
 		data, err := os.ReadFile(file)
 		if err != nil {
 			t.Fatal(err)
 		}
+		var trimmed []string
 		for line := range strings.SplitSeq(string(data), "\n") {
-			if rest, ok := strings.CutPrefix(strings.TrimSpace(line), prefix); ok {
+			trimmed = append(trimmed, strings.TrimSpace(line))
+		}
+		return trimmed
+	}
+	fields := func(file, prefix string) []string {
+		t.Helper()
+		for _, line := range lines(file) {
+			if rest, ok := strings.CutPrefix(line, prefix); ok {
 				return strings.Fields(strings.NewReplacer("]", " ", ",", " ").Replace(rest))
 			}
 		}
 		t.Fatalf("%s has no line that starts with %q", file, prefix)
 		return nil
 	}
-	makefile := fields("Makefile", "GATES :=")
-	workflow := fields(filepath.Join(".github", "workflows", "ci.yml"), "gate: [")
+	makefile := fields(makefileName, "GATES :=")
+	workflow := fields(workflowName, "gate: [")
 	if len(makefile) == 0 || !slices.Equal(makefile, workflow) {
 		t.Errorf("gates in the Makefile %q, in the CI matrix %q: want the same list", makefile, workflow)
+	}
+
+	for file, wants := range map[string][]string{
+		makefileName: {".PHONY: check $(GATES)", "check: $(GATES)"},
+		workflowName: {"name: ${{ matrix.gate }}", "GATE: ${{ matrix.gate }}", `- run: make "$GATE"`},
+	} {
+		have := lines(file)
+		for _, want := range wants {
+			if !slices.Contains(have, want) {
+				t.Errorf("%s lacks the line %s", file, want)
+			}
+		}
 	}
 }
