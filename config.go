@@ -111,10 +111,24 @@ func parseConfig(r io.Reader) (*Config, error) {
 }
 
 func (m *Module) validate() error {
-	if !pathPattern.MatchString(m.Path) {
+	if err := validatePath(m.Path); err != nil {
+		return err
+	}
+	if !knownVCS[m.VCS] {
+		return fmt.Errorf("vcs %q is not one of fossil, git, hg, svn", m.VCS)
+	}
+	if m.Subdir != "" && !pathPattern.MatchString(m.Subdir) {
+		return fmt.Errorf("subdir %q must be a relative path inside the repository", m.Subdir)
+	}
+	return validateRepo(m.Repo)
+}
+
+// validatePath checks the import path below the host.
+func validatePath(path string) error {
+	if !pathPattern.MatchString(path) {
 		return errors.New("path must be elements of letters, digits and . _ ~ - joined by single slashes")
 	}
-	for _, e := range strings.Split(m.Path, "/") {
+	for _, e := range strings.Split(path, "/") {
 		switch {
 		case strings.HasSuffix(e, "."):
 			return fmt.Errorf("path element %q must not end in a dot", e)
@@ -127,19 +141,18 @@ func (m *Module) validate() error {
 			return fmt.Errorf("path element %q would collide with a page of the site", e)
 		}
 	}
-	if !knownVCS[m.VCS] {
-		return fmt.Errorf("vcs %q is not one of fossil, git, hg, svn", m.VCS)
-	}
-	if m.Subdir != "" && !pathPattern.MatchString(m.Subdir) {
-		return fmt.Errorf("subdir %q must be a relative path inside the repository", m.Subdir)
-	}
-	if !repoPattern.MatchString(m.Repo) {
-		return fmt.Errorf("repo %q must be https://host/path in letters, digits and . _ ~ - only, with no trailing slash, query or fragment", m.Repo)
+	return nil
+}
+
+// validateRepo checks the URL of the repository root.
+func validateRepo(repo string) error {
+	if !repoPattern.MatchString(repo) {
+		return fmt.Errorf("repo %q must be https://host/path in letters, digits and . _ ~ - only, with no trailing slash, query or fragment", repo)
 	}
 	// The repository root carries no ".vcs" qualifier (go help importpath).
-	for _, e := range strings.Split(strings.TrimPrefix(m.Repo, "https://"), "/")[1:] {
+	for _, e := range strings.Split(strings.TrimPrefix(repo, "https://"), "/")[1:] {
 		if q := vcsQualifier(e); q != "" {
-			return fmt.Errorf("repo %q must not carry the version control qualifier .%s", m.Repo, q)
+			return fmt.Errorf("repo %q must not carry the version control qualifier .%s", repo, q)
 		}
 	}
 	return nil
