@@ -288,6 +288,10 @@ func TestGofmtGate(t *testing.T) {
 			"a.go":     "package probe\n",
 			"b_int.go": "//go:build integration\n\npackage probe\n\n" + fixable,
 		}},
+		{name: "the loop only in a file the integration tag leaves out", files: map[string]string{
+			"a.go":         "package probe\n",
+			"b_default.go": "//go:build !integration\n\npackage probe\n\n" + fixable,
+		}},
 		{name: "the loop only in a test file", files: map[string]string{
 			"a.go":      "package probe\n",
 			"a_test.go": "package probe\n\n" + fixable,
