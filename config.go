@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 )
@@ -58,7 +59,7 @@ var knownVCS = map[string]bool{"fossil": true, "git": true, "hg": true, "svn": t
 
 // loadConfig reads and validates the configuration file at name.
 func loadConfig(name string) (*Config, error) {
-	data, err := os.ReadFile(name)
+	data, err := os.ReadFile(filepath.Clean(name))
 	if err != nil {
 		return nil, fmt.Errorf("read config: %w", err)
 	}
