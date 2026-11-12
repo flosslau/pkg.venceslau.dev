@@ -102,6 +102,7 @@ func TestParseConfig_accepts(t *testing.T) {
 		{name: "vcs fossil", doc: oneModule(`"path": "foo", "vcs": "fossil", ` + repo)},
 		{name: "repo with upper case and a .go element", doc: oneModule(`"path": "foo", "repo": "https://github.com/SomeOrg/ynab.go"`)},
 		{name: "repo below a user name with a tilde", doc: oneModule(`"path": "foo", "repo": "https://git.example.org/~user/foo"`)},
+		{name: "repo host ending in the letters of a vcs", doc: oneModule(`"path": "foo", "repo": "https://code.hg/r/foo"`)},
 		{name: "subdir of two elements", doc: oneModule(`"path": "foo", "subdir": "libs/foo", ` + repo)},
 	}
 	for _, tt := range tests {
@@ -194,6 +195,16 @@ func TestParseConfig_rejects(t *testing.T) {
 		{name: "absolute subdir", doc: oneModule(`"path": "foo", "repo": "https://code.example/r/foo", "subdir": "/libs"`), wantErr: `subdir "/libs" must be`},
 		{name: "subdir with dot-dot", doc: oneModule(`"path": "foo", "repo": "https://code.example/r/foo", "subdir": "../libs"`), wantErr: `subdir "../libs" must be`},
 		{name: "subdir with space", doc: oneModule(`"path": "foo", "repo": "https://code.example/r/foo", "subdir": "li bs"`), wantErr: `subdir "li bs" must be`},
+
+		// A module with two defects reports the first in the order path,
+		// vcs, subdir, repo; within the repo, its shape before a qualifier.
+		{name: "bad path and bad vcs", doc: oneModule(`"path": "fo o", "vcs": "cvs", "repo": "https://code.example/r/foo"`), wantErr: badPath},
+		{name: "bad path and bad repo", doc: oneModule(`"path": "fo o", "repo": "nope"`), wantErr: badPath},
+		{name: "bad vcs and bad subdir", doc: oneModule(`"path": "foo", "vcs": "cvs", "subdir": "../x", "repo": "https://code.example/r/foo"`), wantErr: `vcs "cvs"`},
+		{name: "bad vcs and bad repo", doc: oneModule(`"path": "foo", "vcs": "cvs", "repo": "nope"`), wantErr: `vcs "cvs"`},
+		{name: "bad subdir and bad repo", doc: oneModule(`"path": "foo", "subdir": "../x", "repo": "nope"`), wantErr: `subdir "../x"`},
+		{name: "repo over http ending in .git", doc: repo("http://code.example/r/foo.git"), wantErr: badRepo},
+
 		{
 			name: "path listed twice",
 			doc: `{"host": "example.org", "modules": [
