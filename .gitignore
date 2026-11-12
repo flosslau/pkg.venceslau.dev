@@ -3,3 +3,6 @@
 
 # The binary go build writes.
 /pkg.venceslau.dev
+
+# Local Claude Code state; the repository tracks none of it.
+/.claude/
