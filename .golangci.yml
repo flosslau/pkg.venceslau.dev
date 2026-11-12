@@ -1,3 +1,6 @@
+# Copyright 2026 Bruno Venceslau
+# SPDX-License-Identifier: Apache-2.0
+
 # see https://golangci-lint.run/usage/configuration/
 version: "2"
 
