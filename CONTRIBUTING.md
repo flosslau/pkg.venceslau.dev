@@ -26,10 +26,10 @@ Run every check CI runs with:
 make check
 ```
 
-It checks the formatting and that every file states its copyright and license,
-vets the code, runs the tests (among them one that hands the generated site to
-the real `go` command, offline), generates the site into `public/` and runs
-golangci-lint. Each of these gates is a target of its own (`make test`,
+It checks the formatting (gofmt, and that `go fix` has nothing to change) and
+that every file states its copyright and license, vets the code, runs the
+tests (among them one that hands the generated site to the real `go` command,
+offline), generates the site into `public/` and runs golangci-lint. Each of these gates is a target of its own (`make test`,
 `make lint`) and a CI job of the same name; `make -k check` goes on past a
 failing gate.
 
