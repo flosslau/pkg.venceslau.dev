@@ -409,8 +409,7 @@ func TestGenerate_reportsAStaticFileItCannotRead(t *testing.T) {
 	}
 	// Root and Windows can still open the file, so the test skips there;
 	// CI runs on ubuntu-latest as a user that is not root, where it runs.
-	if f, err := os.Open(locked); err == nil {
-		f.Close()
+	if _, err := os.ReadFile(locked); err == nil {
 		t.Skip("file permissions are not enforced here, as for root")
 	}
 	out := t.TempDir()

@@ -4,6 +4,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -57,13 +58,12 @@ var knownVCS = map[string]bool{"fossil": true, "git": true, "hg": true, "svn": t
 
 // loadConfig reads and validates the configuration file at name.
 func loadConfig(name string) (*Config, error) {
-	f, err := os.Open(name)
+	data, err := os.ReadFile(name)
 	if err != nil {
-		return nil, fmt.Errorf("open config: %w", err)
+		return nil, fmt.Errorf("read config: %w", err)
 	}
-	defer f.Close()
 
-	cfg, err := parseConfig(f)
+	cfg, err := parseConfig(bytes.NewReader(data))
 	if err != nil {
 		return nil, fmt.Errorf("config %s: %w", name, err)
 	}

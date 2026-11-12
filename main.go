@@ -34,7 +34,7 @@ func run(args []string, stderr io.Writer) int {
 		return 2
 	}
 	if flags.NArg() > 0 {
-		fmt.Fprintf(stderr, "unexpected argument %q\n", flags.Arg(0))
+		_, _ = fmt.Fprintf(stderr, "unexpected argument %q\n", flags.Arg(0))
 		flags.Usage()
 		return 2
 	}
@@ -44,9 +44,9 @@ func run(args []string, stderr io.Writer) int {
 		err = generate(cfg, *static, *out)
 	}
 	if err != nil {
-		fmt.Fprintln(stderr, "error:", err)
+		_, _ = fmt.Fprintln(stderr, "error:", err)
 		return 1
 	}
-	fmt.Fprintf(stderr, "wrote the site of %s to %s (modules: %d)\n", cfg.Host, *out, len(cfg.Modules))
+	_, _ = fmt.Fprintf(stderr, "wrote the site of %s to %s (modules: %d)\n", cfg.Host, *out, len(cfg.Modules))
 	return 0
 }
