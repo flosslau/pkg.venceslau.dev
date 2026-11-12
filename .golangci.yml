@@ -19,9 +19,12 @@ linters:
     - lll
   exclusions:
     rules:
-      # Exclude some linters from running on tests files.
+      # Exclude some linters from running on tests files. goconst: the
+      # values in test tables repeat by design, and each row reads better
+      # with the value than with a name.
       - path: _test\.go
         linters:
           - lll
           - gosec
           - dupl
+          - goconst
