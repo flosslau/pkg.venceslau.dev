@@ -265,3 +265,64 @@ func TestCIRunsEveryGate(t *testing.T) {
 		}
 	}
 }
+
+// The gofmt gate fails when gofmt or go fix would change a file, with or
+// without the integration tag, and when go fix cannot load the code. It is
+// run on a small module with a copy of the Makefile.
+func TestGofmtGate(t *testing.T) {
+	t.Parallel()
+
+	makefile, err := os.ReadFile("Makefile")
+	if err != nil {
+		t.Fatal(err)
+	}
+	const fixable = "import \"strings\"\n\n" +
+		"func F(s string) (n int) {\n\tfor _, e := range strings.Split(s, \",\") {\n\t\tn += len(e)\n\t}\n\treturn n\n}\n"
+	tests := []struct {
+		name     string
+		files    map[string]string
+		wantPass bool
+	}{
+		{name: "clean", files: map[string]string{"a.go": "package probe\n\nfunc A() int { return 1 }\n"}, wantPass: true},
+		{name: "a loop go fix rewrites", files: map[string]string{"a.go": "package probe\n\n" + fixable}},
+		{name: "the loop only under the integration tag", files: map[string]string{
+			"a.go":     "package probe\n",
+			"b_int.go": "//go:build integration\n\npackage probe\n\n" + fixable,
+		}},
+		{name: "the loop only in a test file", files: map[string]string{
+			"a.go":      "package probe\n",
+			"a_test.go": "package probe\n\n" + fixable,
+		}},
+		{name: "code that does not build", files: map[string]string{"a.go": "package probe\n\nfunc B() int { return undefined }\n"}},
+		{name: "code gofmt would change", files: map[string]string{"a.go": "package probe\n\nfunc A() int {return 1}\n"}},
+		// Neither go fix nor the build loads this file; gofmt reads every
+		// .go file whatever its build tags.
+		{name: "a syntax error in a file for another platform", files: map[string]string{
+			"a.go":         "package probe\n",
+			"w_windows.go": "//go:build windows\n\npackage probe\n\nfunc W( {\n",
+		}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			dir := t.TempDir()
+			tt.files["go.mod"] = "module probe\n\ngo 1.24\n"
+			tt.files["Makefile"] = string(makefile)
+			writeFixtures(t, dir, tt.files)
+
+			cmd := exec.CommandContext(t.Context(), "make", "gofmt")
+			cmd.Dir = dir
+			cmd.Env = append(os.Environ(), "GOTOOLCHAIN=local", "GOWORK=off", "GOFLAGS=")
+			out, err := cmd.CombinedOutput()
+			// A failing case must fail in the gate, with its message, not
+			// because make or go could not run at all.
+			var exit *exec.ExitError
+			switch {
+			case tt.wantPass && err != nil:
+				t.Errorf("make gofmt failed: %v; output:\n%s", err, out)
+			case !tt.wantPass && (!errors.As(err, &exit) || !bytes.Contains(out, []byte(" needed"))):
+				t.Errorf("make gofmt = %v, want the gate to fail with its message; output:\n%s", err, out)
+			}
+		})
+	}
+}
