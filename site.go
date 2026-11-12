@@ -119,10 +119,12 @@ func hidden(name string) bool {
 
 // writeFile writes a page for a web server to read, creating its directory.
 func writeFile(name string, data []byte) error {
-	if err := os.MkdirAll(filepath.Dir(name), 0o755); err != nil {
+	// The site is public and a web server that may run as another user reads
+	// it, so directories and pages are readable by all.
+	if err := os.MkdirAll(filepath.Dir(name), 0o755); err != nil { //nolint:gosec // G301: public site
 		return fmt.Errorf("create directory: %w", err)
 	}
-	if err := os.WriteFile(name, data, 0o644); err != nil {
+	if err := os.WriteFile(name, data, 0o644); err != nil { //nolint:gosec // G306: public page
 		return fmt.Errorf("write page: %w", err)
 	}
 	return nil
