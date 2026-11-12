@@ -265,3 +265,52 @@ func TestCIRunsEveryGate(t *testing.T) {
 		}
 	}
 }
+
+// The gofmt gate fails when gofmt or go fix would change a file, with or
+// without the integration tag, and when go fix cannot load the code. It is
+// run on a small module with a copy of the Makefile.
+func TestGofmtGate(t *testing.T) {
+	t.Parallel()
+
+	makefile, err := os.ReadFile("Makefile")
+	if err != nil {
+		t.Fatal(err)
+	}
+	const fixable = "import \"strings\"\n\n" +
+		"func F(s string) (n int) {\n\tfor _, e := range strings.Split(s, \",\") {\n\t\tn += len(e)\n\t}\n\treturn n\n}\n"
+	tests := []struct {
+		name     string
+		files    map[string]string
+		wantPass bool
+	}{
+		{name: "clean", files: map[string]string{"a.go": "package probe\n\nfunc A() int { return 1 }\n"}, wantPass: true},
+		{name: "a loop go fix rewrites", files: map[string]string{"a.go": "package probe\n\n" + fixable}},
+		{name: "the loop only under the integration tag", files: map[string]string{
+			"a.go":     "package probe\n",
+			"b_int.go": "//go:build integration\n\npackage probe\n\n" + fixable,
+		}},
+		{name: "the loop only in a test file", files: map[string]string{
+			"a.go":      "package probe\n",
+			"a_test.go": "package probe\n\n" + fixable,
+		}},
+		{name: "code that does not build", files: map[string]string{"a.go": "package probe\n\nfunc B() int { return undefined }\n"}},
+		{name: "code gofmt would change", files: map[string]string{"a.go": "package probe\n\nfunc A() int {return 1}\n"}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			dir := t.TempDir()
+			tt.files["go.mod"] = "module probe\n\ngo 1.24\n"
+			tt.files["Makefile"] = string(makefile)
+			writeFixtures(t, dir, tt.files)
+
+			cmd := exec.CommandContext(t.Context(), "make", "gofmt")
+			cmd.Dir = dir
+			cmd.Env = append(os.Environ(), "GOTOOLCHAIN=local", "GOWORK=off", "GOFLAGS=")
+			out, err := cmd.CombinedOutput()
+			if passed := err == nil; passed != tt.wantPass {
+				t.Errorf("make gofmt passed = %v, want %v; output:\n%s", passed, tt.wantPass, out)
+			}
+		})
+	}
+}
