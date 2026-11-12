@@ -9,7 +9,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"maps"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -53,14 +52,15 @@ var (
 	hostPattern = regexp.MustCompile(`^` + label + `(\.` + label + `)+$`)
 	pathPattern = regexp.MustCompile(`^` + element + `(/` + element + `)*$`)
 	// A repository element may also start with "~", as user names do on
-	// some hosts. The group "path" is the part after the server name.
-	repoPattern = regexp.MustCompile(`^https://` + label + `(\.` + label + `)+(?P<path>(/~?` + element + `)+)$`)
+	// some servers. The group "path" is what follows the server name and
+	// its slash.
+	repoPattern = regexp.MustCompile(`^https://` + label + `(\.` + label + `)+/(?P<path>~?` + element + `(/~?` + element + `)*)$`)
 	repoPath    = repoPattern.SubexpIndex("path")
 )
 
 // knownVCS lists the systems "go help importpath" names for the go-import
-// tag in Go 1.27.
-var knownVCS = map[string]bool{"fossil": true, "git": true, "hg": true, "svn": true}
+// tag in Go 1.27, in the order error messages list them.
+var knownVCS = []string{"fossil", "git", "hg", "svn"}
 
 // loadConfig reads and validates the configuration file at name.
 func loadConfig(name string) (*Config, error) {
@@ -122,8 +122,8 @@ func (m *Module) validate() error {
 	if err := validatePath(m.Path); err != nil {
 		return err
 	}
-	if !knownVCS[m.VCS] {
-		return fmt.Errorf("vcs %q is not one of %s", m.VCS, strings.Join(slices.Sorted(maps.Keys(knownVCS)), ", "))
+	if !slices.Contains(knownVCS, m.VCS) {
+		return fmt.Errorf("vcs %q is not one of %s", m.VCS, strings.Join(knownVCS, ", "))
 	}
 	if m.Subdir != "" && !pathPattern.MatchString(m.Subdir) {
 		return fmt.Errorf("subdir %q must be a relative path inside the repository", m.Subdir)
@@ -160,7 +160,7 @@ func validateRepo(repo string) error {
 			"with no trailing slash, query or fragment", repo)
 	}
 	// The repository root carries no ".vcs" qualifier (go help importpath).
-	for _, e := range strings.Split(match[repoPath][1:], "/") {
+	for _, e := range strings.Split(match[repoPath], "/") {
 		if q := vcsQualifier(e); q != "" {
 			return fmt.Errorf("repo %q must not carry the version control qualifier .%s", repo, q)
 		}
@@ -171,7 +171,7 @@ func validateRepo(repo string) error {
 // vcsQualifier returns the version control system whose ".vcs" qualifier
 // ends the path element elem, or "" when there is none.
 func vcsQualifier(elem string) string {
-	for vcs := range knownVCS {
+	for _, vcs := range knownVCS {
 		if strings.HasSuffix(elem, "."+vcs) {
 			return vcs
 		}
