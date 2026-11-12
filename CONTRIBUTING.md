@@ -13,10 +13,12 @@ change, get in touch with @brunovenceslau first.
 
 ## Working on it
 
-You need Go 1.25 or newer, git, make and the [reuse](https://reuse.software)
-tool. `mise.toml` pins the versions of Go and reuse that CI uses, for those who
-use [mise](https://mise.jdx.dev).
-Without mise, `pipx install 'reuse[charset-normalizer]'` installs reuse.
+You need Go 1.25 or newer, git, make, the [reuse](https://reuse.software)
+tool and [golangci-lint](https://golangci-lint.run). `mise.toml` pins the
+versions of Go, reuse and golangci-lint that CI uses, for those who use
+[mise](https://mise.jdx.dev).
+Without mise, `pipx install 'reuse[charset-normalizer]'` installs reuse, and
+golangci-lint's documentation lists its installers.
 
 Run every check CI runs with:
 
@@ -26,7 +28,10 @@ make check
 
 It checks the formatting and that every file states its copyright and license,
 vets the code, runs the tests (among them one that hands the generated site to
-the real `go` command, offline) and generates the site into `public/`.
+the real `go` command, offline), generates the site into `public/` and runs
+golangci-lint. Each of these gates is a target of its own (`make test`,
+`make lint`) and a CI job of the same name; `make -k check` goes on past a
+failing gate.
 
 ## Copyright and license of each file
 

@@ -99,9 +99,12 @@ the deploy command `npx wrangler deploy`, which uploads `public/` as
 make check
 ```
 
-runs what CI runs. One of the tests generates a site, serves it from a local
-test server and has the real `go` command resolve modules through it,
-including a module in a subdirectory.
+runs what CI runs: the gates `gofmt`, `reuse`, `vet`, `test`, `site` and
+`lint`, each also a target of its own (`make lint`). CI runs each gate as a
+job of the same name, and the ruleset of `main` requires all six. One of the
+tests generates a site, serves it from a local test server and has the real
+`go` command resolve modules through it, including a module in a
+subdirectory.
 
 ## License
 

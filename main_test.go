@@ -212,3 +212,29 @@ func TestDeployMatchesTheDefaults(t *testing.T) {
 		t.Errorf("the 404 page of the deploy: %v", err)
 	}
 }
+
+// CI runs one job per gate of the Makefile, named after the gate, and the
+// ruleset of main requires those names, so the two lists must agree.
+func TestCIRunsEveryGate(t *testing.T) {
+	t.Parallel()
+
+	fields := func(file, prefix string) []string {
+		t.Helper()
+		data, err := os.ReadFile(file)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, line := range strings.Split(string(data), "\n") {
+			if rest, ok := strings.CutPrefix(strings.TrimSpace(line), prefix); ok {
+				return strings.Fields(strings.NewReplacer("]", " ", ",", " ").Replace(rest))
+			}
+		}
+		t.Fatalf("%s has no line that starts with %q", file, prefix)
+		return nil
+	}
+	makefile := fields("Makefile", "GATES :=")
+	workflow := fields(filepath.Join(".github", "workflows", "ci.yml"), "gate: [")
+	if len(makefile) == 0 || !slices.Equal(makefile, workflow) {
+		t.Errorf("gates in the Makefile %q, in the CI matrix %q: want the same list", makefile, workflow)
+	}
+}

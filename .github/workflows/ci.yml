@@ -15,11 +15,21 @@ permissions:
   contents: read
 
 jobs:
-  check:
+  # One job per gate of the Makefile, named after it; the ruleset of main
+  # requires these names, and TestCIRunsEveryGate keeps the list equal to
+  # GATES in the Makefile.
+  gate:
+    name: ${{ matrix.gate }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        gate: [gofmt, reuse, vet, test, site, lint]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - uses: jdx/mise-action@b44d12e7d0d8ee7461bb893e1b1993500433185b # v5.2.7
-      - run: make check
+      - run: make "$GATE"
+        env:
+          GATE: ${{ matrix.gate }}
