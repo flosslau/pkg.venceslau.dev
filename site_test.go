@@ -383,6 +383,63 @@ func TestGenerate_thisSite(t *testing.T) {
 	}
 }
 
+func TestGenerate_reportsAPageOverADirectory(t *testing.T) {
+	t.Parallel()
+
+	// A directory sits where the index page has to be written.
+	out := t.TempDir()
+	if err := os.Mkdir(filepath.Join(out, "index.html"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	err := generate(testConfig(), "", out)
+	if err == nil || !strings.Contains(err.Error(), "write page") {
+		t.Errorf("generate error = %v, want it to report the page it could not write", err)
+	}
+}
+
+func TestGenerate_reportsAStaticFileItCannotRead(t *testing.T) {
+	t.Parallel()
+
+	static := t.TempDir()
+	writeFixtures(t, static, map[string]string{"locked.txt": "no access"})
+	locked := filepath.Join(static, "locked.txt")
+	if err := os.Chmod(locked, 0); err != nil {
+		t.Fatal(err)
+	}
+	// Root and Windows can still open the file, so the test skips there;
+	// CI runs on ubuntu-latest as a user that is not root, where it runs.
+	if f, err := os.Open(locked); err == nil {
+		f.Close()
+		t.Skip("file permissions are not enforced here, as for root")
+	}
+	out := t.TempDir()
+
+	err := generate(testConfig(), static, out)
+	if err == nil || !strings.Contains(err.Error(), "copy static files") || !strings.Contains(err.Error(), "locked.txt") {
+		t.Errorf("generate error = %v, want one about copying locked.txt", err)
+	}
+	if _, err := os.Stat(filepath.Join(out, "locked.txt")); err == nil {
+		t.Error("locked.txt was written to the site")
+	}
+}
+
+// A template that fails part way through has already written some of the
+// page; render must not write that part to disk.
+func TestRender_leavesNoPageOnATemplateError(t *testing.T) {
+	t.Parallel()
+
+	name := filepath.Join(t.TempDir(), "index.html")
+	// module.html reads fields an int does not have.
+	err := render(name, "module.html", 42)
+	if err == nil || !strings.Contains(err.Error(), "render") {
+		t.Errorf("render error = %v, want a template error", err)
+	}
+	if _, err := os.Stat(name); err == nil {
+		t.Error("render wrote a page despite the template error")
+	}
+}
+
 // writeFixtures writes test files without the code under test.
 func writeFixtures(t *testing.T, dir string, files map[string]string) {
 	t.Helper()
