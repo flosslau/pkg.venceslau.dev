@@ -295,6 +295,12 @@ func TestGofmtGate(t *testing.T) {
 		}},
 		{name: "code that does not build", files: map[string]string{"a.go": "package probe\n\nfunc B() int { return undefined }\n"}},
 		{name: "code gofmt would change", files: map[string]string{"a.go": "package probe\n\nfunc A() int {return 1}\n"}},
+		// Neither go fix nor the build loads this file; gofmt reads every
+		// .go file whatever its build tags.
+		{name: "a syntax error in a file for another platform", files: map[string]string{
+			"a.go":         "package probe\n",
+			"w_windows.go": "//go:build windows\n\npackage probe\n\nfunc W( {\n",
+		}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
