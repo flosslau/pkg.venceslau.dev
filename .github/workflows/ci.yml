@@ -31,7 +31,8 @@ jobs:
         with:
           persist-credentials: false
       # A fixed mise, checked by the action against the release's signed
-      # packslip.
+      # packslip. With mise.lock present, the action installs with --locked:
+      # each tool comes from the URL and checksum the lock records.
       - uses: jdx/mise-action@b44d12e7d0d8ee7461bb893e1b1993500433185b # v5.2.7
         with:
           version: 2026.10.23
