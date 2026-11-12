@@ -249,8 +249,12 @@ func TestCIRunsEveryGate(t *testing.T) {
 		t.Errorf("gates in the Makefile %q, in the CI matrix %q: want the same list", makefile, workflow)
 	}
 
+	targets := []string{".PHONY: check $(GATES)", "check: $(GATES)"}
+	for _, gate := range makefile {
+		targets = append(targets, gate+":")
+	}
 	for file, wants := range map[string][]string{
-		makefileName: {".PHONY: check $(GATES)", "check: $(GATES)"},
+		makefileName: targets,
 		workflowName: {"name: ${{ matrix.gate }}", "GATE: ${{ matrix.gate }}", `- run: make "$GATE"`},
 	} {
 		have := lines(file)
