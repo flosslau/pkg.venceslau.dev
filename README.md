@@ -121,6 +121,12 @@ assets: on a push to `main`, Cloudflare runs the build command `go run .` and
 the deploy command `npx wrangler deploy`, which uploads `public/` as
 `wrangler.toml` describes. No GitHub secret is involved.
 
+Cloudflare builds with the Go of its build image, not the Go that `mise.toml`
+pins for CI: on 2026-11-12, Cloudflare's build-image page listed Go 1.27.3,
+and CI used 1.27.4. Setting the Worker's `GO_VERSION` build variable
+overrides the image's Go. It is left unset while the image's Go meets the
+`go` line of `go.mod`, and gets set once `go.mod` asks for a newer one.
+
 ## Tests
 
 ```
